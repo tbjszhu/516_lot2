@@ -10,13 +10,15 @@ import random
 import csv
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import auc
+from sklearn.cluster import KMeans
+from sklearn.externals import joblib
 
 # Read images/masks from a directory
 train_width = 10 # the number of train images for each class
 opposite_image_num = 10 # the number of opposite images for each class
 
 
-def getImageListFromDir(img_dir, filetype='png'):
+def getFileListFromDir(img_dir, filetype='png'):
     """
     :param img_dir: imgs root dir, string
     :param filetype: "png", "jpg" or "bmp", string
@@ -137,6 +139,16 @@ def generator_descriptor(fileaddr, save_addr):
             des = descriptor_generator(data)
             np.save(save_addr+'/'+filename_des+'_dsp', des)
 
+def generate_kmeans_model(save_addr, n_clusters, ndarray, train_data):
+    kmeans = KMeans(n_clusters, init=ndarray, random_state=0).fit(train_data)  
+    if os.path.exists(save_addr) == False:
+        os.mkdir(save_addr)
+    if cv2.__version__[0] == '3':
+        prefix = 'cv3'
+    else:
+        prefix = 'cv2'
+    # save k-means model for further use
+    joblib.dump(kmeans, save_addr + '/' + prefix + '_kmeans_' + str(n_clusters) + '.pkl')
 
 # generator hists (global descriptors) from data (local descriptors or image)
 def generateHist(model, data, data_type, nfeatures, decpt_type):
