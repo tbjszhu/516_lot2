@@ -1,13 +1,140 @@
 import cv2
 from utils import *
 from matplotlib import pyplot as plt
-from scipy.misc import imsave 
+from scipy.misc import imsave
+import numpy as np 
 
+dim = 3 # constant dimension for each pixel RGB or LAB
+
+def local_texton_generation(addr, rectangle, texton_name, show = False):
+    img = cv2.imread(addr)
+    img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+    h_org = rectangle[0]
+    w_org = rectangle[1]
+    height = rectangle[2]
+    weight = rectangle[3]
+
+    img_lab_local = np.zeros((height, weight,dim))
+    for i in range(height):
+        for j in range(weight):                    
+            img[h_org+i][w_org+j]=[0,0,255]
+            for k in range(dim):
+                img_lab_local[i][j][k] = img_lab[h_org+i][w_org+j][k]
+    des = descriptor_generator(img_lab_local)
+    texton = np.mean(np.mean(des, axis = 1), axis = 0) # get the descriptor average for this texton
+    if show == True:
+        cv2.imshow(texton_name,img)
+        if cv2.waitKey(0) & 0xff == 27:
+            cv2.destroyAllWindows()                 
+    return texton
+     
 def main():
-    img_dir = "./image_lab/"
-    save_dir = "./descriptor/"
+    img_dir = "./image_jpg/"
+    save_dir = "./descriptor_init/"
     generator_descriptor(img_dir, save_dir)
-
+    rectangle = [0,0,0,0] # x start pos, y start pos, height, width for the texton example window
+    
+    image_list = getImageListFromDir(img_dir, filetype='jpg')
+    show = True
+    for addr in image_list:
+        filename = addr.split('/')[-1].split('.')[0]
+        
+        # sky
+        if filename == "nessne04":
+            rectangle = [20,20,50,50]
+            texton_name = 'sky'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+        
+        # grass    
+        if filename == "nessne04":
+            rectangle = [450,140,20,20]
+            texton_name = 'grass'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+            
+        # tree    
+        if filename == "nessne04":
+            rectangle = [210,240,80,80]
+            texton_name = 'tree'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+            
+        # yellow leaf on ground    
+        if filename == "wolfrun":
+            rectangle = [380,110,60,80]
+            texton_name = 'leaf'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)            
+            
+        # water    
+        if filename == "nessne04":
+            rectangle = [318,596,40,40]
+            texton_name = 'water'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+            
+        # road    
+        if filename == "nessne04":
+            rectangle = [370,290,100,100]
+            texton_name = 'road'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton) 
+                              
+        # car    
+        if filename == "much4":
+            rectangle = [250,60,80,100]
+            texton_name = 'car'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+            
+        # house    
+        if filename == "much4":
+            rectangle = [100,440,80,100]
+            texton_name = 'house'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)  
+            
+        # Route Sign    
+        if filename == "runway":
+            rectangle = [194,270,120,220]
+            texton_name = 'sign'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)   
+            
+        # cloud    
+        if filename == "m45_04sml":
+            rectangle = [40,200,50,50]
+            texton_name = 'cloud'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+                                
+        # animal    
+        if filename == "gower02":
+            rectangle = [280,320,60,60]
+            texton_name = 'animal'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)  
+            
+        # fast moving leaf    
+        if filename == "gower08":
+            rectangle = [210,80,200,200]
+            texton_name = 'fastleaf'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)                                   
 
 if __name__ == "__main__":
     '''parser = argparse.ArgumentParser()

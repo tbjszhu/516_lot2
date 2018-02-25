@@ -13,7 +13,9 @@ def main():
         img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
         #plt.imshow(img_lab), plt.show()
         #imsave( "./image_lab/"+filename+'.png', img_lab);
-        cv2.imwrite( "./image_lab/"+filename+'.png', img_lab);
+        #cv2.imwrite( "./image_lab/"+filename+'.png', img_lab);
+        #np.save("./image_lab/"+filename, img_lab)
+        #print img_lab
 
 if __name__ == "__main__":
     '''parser = argparse.ArgumentParser()

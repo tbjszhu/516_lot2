@@ -41,6 +41,20 @@ def getHistListFromDir(img_dir):
 
 # read images with img generator
 
+def lab_generator(lab_list):
+    """
+    :param lab_list: list of iamges, list of string
+    :return: yield a pair of sequences images
+    """
+    while len(lab_list) > 0:
+        f1 = lab_list.pop(0)
+        print "read file: ", f1.split('/')[-1]
+        np_lab = np.load(f1)
+        yield (np_lab, f1.split('/')[-1])
+
+
+# read images with img generator
+
 def img_generator(img_list):
     """
     :param img_list: list of iamges, list of string
@@ -95,6 +109,7 @@ def descriptor_generator(data):
                     des_line.append(des_pix)
             des.append(des_line)                
     des = np.array(des)
+    print des.shape
     return des
 
 # generator descriptors
