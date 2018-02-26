@@ -79,6 +79,9 @@ def main():
         tmp = label_reshape.copy()
         tmp[tmp==layer] = normalize_value
         tmp[tmp!=255] = 0
+        '''plt.imshow(tmp.astype(np.uint8),cmap ="gray")
+        plt.show()  
+        plt.close()'''      
         integral = generate_integral_image(tmp, normalize_value)
         '''plt.imshow(integral, cmap ="gray")
         plt.show()
@@ -87,7 +90,21 @@ def main():
         
     # generate histogram        
     hist_addr = hist_dir + test_image            
-    his = generate_histogram(layers,sub_window)
+    hist = generate_histogram(layers,sub_window)
+    print hist.shape
+    
+    # debug
+    '''print hist.shape, label_reshape.shape    
+    hist_reshape = np.reshape(hist, (label_reshape.shape[0], label_reshape.shape[1],12))
+    hist_pixel = np.zeros(label_reshape.shape)
+    for i in range(label_reshape.shape[0]):
+        for j in range(label_reshape.shape[1]):
+            for k in range(12):
+                if hist_reshape[i,j,k] == np.max(hist_reshape[i,j,:]):
+                    hist_pixel[i,j] = (hist_reshape[i,j,k])
+    plt.imshow(hist_pixel,cmap ="gray")
+    plt.show()
+    plt.close()'''
                
     # read kmeans hist
     save_addr = './save_hist_model'
@@ -105,15 +122,19 @@ def main():
             model_addr = filename 
     print "Kmeans model addr : " + model_addr     
     if model_exist:
-        kmeans_hist = joblib.load(model_addr) # load pre-trained k-means model #
+        kmeans_hist = joblib.load(model_addr) # load pre-trained k-means model
          #print ('kmeans parameters', kmeans.get_params())
     else:
         print "please generate kmeans model for hist"
         sys.exit(0)
         
     # predict hist for test image
-    label = kmeans_hist.predict(des_reshape)
-        
+    label_hist = kmeans_hist.predict(hist)
+    label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
+    plt.imshow(label_hist_reshape,cmap ="gray")
+    plt.show()
+    plt.close()
+            
 if __name__ == "__main__":
     '''parser = argparse.ArgumentParser()
     parser.add_argument("-n", type=int, default=50,

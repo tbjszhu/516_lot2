@@ -191,28 +191,36 @@ def generate_histogram(layers, sub_window):
     alloc_width = sub_window - 1
     
     zeros = np.zeros((1,dim))
-    his = []
+    hist = np.zeros_like(layers)
     for i in range(height):
         for j in range(width):
             if i < alloc_width or j < alloc_width: # treatment for edge element
-                a = zeros           
-                if i < alloc_width:
-                    b = zeros
-                else:
-                    b = layers[i-alloc_width,j]
-                    
-                if j < alloc_width:
-                    d = zeros
-                else:
-                    d = layers[i,j-alloc_width]
+                a = zeros
             else:
-                a = layers[i-alloc_width,j-alloc_width]   
+                a = layers[i-alloc_width,j-alloc_width] 
+                                          
+            if i < alloc_width:
+                b = zeros
+            else:
+                b = layers[i-alloc_width,j]
+                
+            if j < alloc_width:
+                d = zeros
+            else:
+                d = layers[i,j-alloc_width]
+
             c = layers[i,j]   
-            his_pix = c - d - b + a
-            his.append(his_pix)
-    his = np.array(his)
-    his = np.reshape(his,(his.shape[0], his.shape[2]))              
-    return his    
+            hist_pix = c + a - d - b
+            '''if i == 200 and j == 200:
+                print "c", c
+                print "a",a
+                print "d",d
+                print "b",b
+                print i,j, np.max(hist_pix), hist_pix'''
+            #hist.append(hist_pix)
+            hist[i,j] = hist_pix  
+    hist = np.reshape(hist, (height * width, dim))             
+    return hist    
 
 # generator hists (global descriptors) from data (local descriptors or image)
 def generateHist(model, data, data_type, nfeatures, decpt_type):
