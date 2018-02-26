@@ -2,8 +2,11 @@ from sklearn.externals import joblib
 import argparse
 import cv2
 from utils import *
+from matplotlib import pyplot as plt
+import time
 
 desp_dim = 11
+normalize_value = 255
 
 def main():
 
@@ -43,19 +46,26 @@ def main():
     lines = des.shape[0] * des.shape[1]
     des_reshape = np.reshape(des, (lines, desp_dim))
     label = kmeans.predict(des_reshape)
-    print label.shape
-    label_pixel = label * 10
-    label_reshape = np.reshape(label_pixel, (des.shape[0], des.shape[1]))
-    print label_reshape.shape
-    cv2.imshow('mid', label_reshape.astype(np.uint8))
-    if cv2.waitKey(0) & 0xff == 27:
-        cv2.destroyAllWindows()      
+    label_reshape = np.reshape(label, (des.shape[0], des.shape[1])) 
+    label_pixel = label_reshape * 15
+    #plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
+    #plt.show()
     
-    
-    
-    
-                
-               
+    # get all layer image
+    layer_num = kmeans.get_params()['n_clusters']
+    layers = np.zeros((label_reshape.shape[0], label_reshape.shape[1], layer_num))
+    for layer in range(layer_num):
+        print "layer : " + str(layer)
+        tmp = label_reshape.copy()
+        tmp[tmp==layer] = normalize_value
+        tmp[tmp!=255] = 0 
+        integral = generate_integral_image(tmp, normalize_value)
+        '''plt.imshow(integral, cmap ="gray")
+        plt.show()
+        plt.close()'''
+        layers[:,:,layer] = integral.copy()
+        
+    # generate histogram              
     
     
 if __name__ == "__main__":
