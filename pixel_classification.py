@@ -7,6 +7,7 @@ import time
 
 desp_dim = 11
 normalize_value = 255
+sub_window = 32
 
 def main():
 
@@ -34,39 +35,83 @@ def main():
         
     # get k-means init value
     init_value = kmeans.get_params()['init']
-    # get classisave_modelfication result for init value
-    label = kmeans.predict(init_value)
-    #print kmeans.cluster_centers_
     
-    # test image
-    test_addr = "./image_jpg/nessne04.jpg"
-    img = cv2.imread(test_addr)
-    img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)        
-    des = descriptor_generator(img_lab)
-    lines = des.shape[0] * des.shape[1]
-    des_reshape = np.reshape(des, (lines, desp_dim))
-    label = kmeans.predict(des_reshape)
-    label_reshape = np.reshape(label, (des.shape[0], des.shape[1])) 
-    label_pixel = label_reshape * 15
-    #plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
-    #plt.show()
+    # train histogram
+    test_dir = "./image_jpg/"   
+    desp_save_dir = "./descriptor/"
+    hist_dir = "./hist/"
+    image_list = getFileListFromDir(desp_save_dir, filetype='npy')
+    hist_list = getFileListFromDir(hist_dir, filetype='npy')
+    hist_num = len(hist_list)
+    hist_total = []
     
-    # get all layer image
-    layer_num = kmeans.get_params()['n_clusters']
-    layers = np.zeros((label_reshape.shape[0], label_reshape.shape[1], layer_num))
-    for layer in range(layer_num):
-        print "layer : " + str(layer)
-        tmp = label_reshape.copy()
-        tmp[tmp==layer] = normalize_value
-        tmp[tmp!=255] = 0 
-        integral = generate_integral_image(tmp, normalize_value)
-        '''plt.imshow(integral, cmap ="gray")
-        plt.show()
-        plt.close()'''
-        layers[:,:,layer] = integral.copy()
-        
-    # generate histogram              
-    
+    #!! change to !=
+    if hist_num < len(image_list): # if you want to update hists, delete all of them
+        for test_addr in image_list:
+            #test_image = "nessne04"
+            #test_addr = test_dir + test_image + ".jpg"
+            print "teating image : ", test_addr
+            test_image = test_addr.split('/')[-1].split('.')[0]
+            desp_list = getFileListFromDir(desp_save_dir, filetype='npy')
+            desp_exit = False
+            for despfile in desp_list:
+                if test_image in despfile:
+                    desp_exist = True
+                    
+            if desp_exist:
+                print "reading exist descriptor file"     
+                des = np.load(desp_save_dir + test_image + ".npy")
+            else:
+                print "creating descriptor"
+                img = cv2.imread(test_addr)
+                img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)        
+                des = descriptor_generator(img_lab)
+                
+            lines = des.shape[0] * des.shape[1]
+            des_reshape = np.reshape(des, (lines, desp_dim))
+            label = kmeans.predict(des_reshape)
+            label_reshape = np.reshape(label, (des.shape[0], des.shape[1])) 
+            label_pixel = label_reshape * 15
+            #plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
+            #plt.show()
+            
+            # get all layer image
+            layer_num = kmeans.get_params()['n_clusters']
+            layers = np.zeros((label_reshape.shape[0], label_reshape.shape[1], layer_num))
+            for layer in range(layer_num):
+                tmp = label_reshape.copy()
+                tmp[tmp==layer] = normalize_value
+                tmp[tmp!=255] = 0
+                integral = generate_integral_image(tmp, normalize_value)
+                '''plt.imshow(integral, cmap ="gray")
+                plt.show()
+                plt.close()'''
+                layers[:,:,layer] = integral[0:-1,0:-1].copy()
+                
+            # generate histogram        
+            hist_addr = hist_dir + test_image            
+            his = generate_histogram(layers,sub_window)
+            if os.path.exists(hist_dir) == False:
+                os.mkdir(hist_dir)
+            np.save(hist_addr, his)
+            if hist_total == []:
+                hist_total = his
+            else:
+                hist_total = np.vstack([hist_total, his])
+    else:
+        print "Hist exist, Reading..."
+        for hist_addr in hist_list:
+            print "Read file:", hist_addr
+            his = np.load(hist_addr)
+            if hist_total == []:
+                hist_total = his
+            else:
+                hist_total = np.vstack([hist_total, his])                
+    # kmeans
+    print hist_total.shape
+    save_addr = './save_hist_model/'
+    n_clusters = 8
+    generate_kmeans_model(hist_total, save_addr, n_clusters)
     
 if __name__ == "__main__":
     '''parser = argparse.ArgumentParser()

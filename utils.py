@@ -12,11 +12,11 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import auc
 from sklearn.cluster import KMeans
 from sklearn.externals import joblib
+import time
 
 # Read images/masks from a directory
 train_width = 10 # the number of train images for each class
 opposite_image_num = 10 # the number of opposite images for each class
-
 
 def getFileListFromDir(img_dir, filetype='png'):
     """
@@ -160,8 +160,11 @@ def read_kmeans_init(desp_init_dir):
             init_value = np.vstack((init_value, np.load(npyfile)))
     return init_value
             
-def generate_kmeans_model(save_addr, n_clusters, ndarray, train_data):
-    kmeans = KMeans(n_clusters, init=ndarray, random_state=0).fit(train_data)  
+def generate_kmeans_model(train_data, save_addr, n_clusters, ndarray=None):
+    if ndarray == None:
+        kmeans = KMeans(n_clusters, random_state=0).fit(train_data)
+    else:
+        kmeans = KMeans(n_clusters, init=ndarray, random_state=0).fit(train_data)  
     if os.path.exists(save_addr) == False:
         os.mkdir(save_addr)
     if cv2.__version__[0] == '3':
@@ -174,7 +177,42 @@ def generate_kmeans_model(save_addr, n_clusters, ndarray, train_data):
 def generate_integral_image(tmp, normalize_value):
     tmp = 1.0*tmp/normalize_value
     integral = cv2.integral(tmp.astype(np.uint8))    
-    return np.sqrt(integral)
+    #return np.sqrt(integral)
+    return integral
+
+def generate_histogram(layers, sub_window):
+    """
+    :param data: numpy array grayscale image for getting histo or local descriptors for an images
+    :param feature_point_quantity: MAX feature point quantity
+    :return: descriptor_list
+    """
+    
+    height, width, dim =  layers.shape
+    alloc_width = sub_window - 1
+    
+    zeros = np.zeros((1,dim))
+    his = []
+    for i in range(height):
+        for j in range(width):
+            if i < alloc_width or j < alloc_width: # treatment for edge element
+                a = zeros           
+                if i < alloc_width:
+                    b = zeros
+                else:
+                    b = layers[i-alloc_width,j]
+                    
+                if j < alloc_width:
+                    d = zeros
+                else:
+                    d = layers[i,j-alloc_width]
+            else:
+                a = layers[i-alloc_width,j-alloc_width]   
+            c = layers[i,j]   
+            his_pix = c - d - b + a
+            his.append(his_pix)
+    his = np.array(his)
+    his = np.reshape(his,(his.shape[0], his.shape[2]))              
+    return his    
 
 # generator hists (global descriptors) from data (local descriptors or image)
 def generateHist(model, data, data_type, nfeatures, decpt_type):

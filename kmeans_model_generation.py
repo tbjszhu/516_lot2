@@ -95,7 +95,7 @@ def main():
     ndarray = init_value #(n_clusters, n_features)
     print "Kmeans shape : " + str(ndarray.shape)
     print "Kmeans tarin size : " + str(train_data.shape)
-    generate_kmeans_model(save_addr, n_clusters, ndarray, train_data)       
+    generate_kmeans_model(train_data, save_addr, n_clusters, ndarray)       
 
 if __name__ == "__main__":
     '''parser = argparse.ArgumentParser()
