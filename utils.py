@@ -171,6 +171,11 @@ def generate_kmeans_model(save_addr, n_clusters, ndarray, train_data):
     # save k-means model for further use
     joblib.dump(kmeans, save_addr + '/' + prefix + '_kmeans_' + str(n_clusters) + '.pkl')
 
+def generate_integral_image(tmp, normalize_value):
+    tmp = 1.0*tmp/normalize_value
+    integral = cv2.integral(tmp.astype(np.uint8))    
+    return np.sqrt(integral)
+
 # generator hists (global descriptors) from data (local descriptors or image)
 def generateHist(model, data, data_type, nfeatures, decpt_type):
     """
