@@ -39,7 +39,7 @@ def main():
     # train histogram
     test_dir = "./image_jpg/"   
     desp_save_dir = "./descriptor/"
-    hist_dir = "./hist/"
+    hist_dir = "./hist/cv3/"
     image_list = getFileListFromDir(desp_save_dir, filetype='npy') # change to test_dir
     hist_list = getFileListFromDir(hist_dir, filetype='npy')
     hist_num = len(hist_list)
@@ -50,7 +50,7 @@ def main():
         for test_addr in image_list:
             #test_image = "nessne04"
             #test_addr = test_dir + test_image + ".jpg"
-            print "teating image : ", test_addr
+            print "treating image : ", test_addr
             test_image = test_addr.split('/')[-1].split('.')[0]
             desp_list = getFileListFromDir(desp_save_dir, filetype='npy')
             desp_exit = False
@@ -71,7 +71,7 @@ def main():
             des_reshape = np.reshape(des, (lines, desp_dim))
             label = kmeans.predict(des_reshape)
             label_reshape = np.reshape(label, (des.shape[0], des.shape[1])) 
-            label_pixel = label_reshape * 15
+            #label_pixel = label_reshape * 15
             #plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
             #plt.show()
             
@@ -92,7 +92,7 @@ def main():
             hist_addr = hist_dir + test_image            
             his = generate_histogram(layers,sub_window)
             if os.path.exists(hist_dir) == False:
-                os.mkdir(hist_dir)
+                os.makedirs(hist_dir)
             np.save(hist_addr, his)
             if hist_total == []:
                 hist_total = his
@@ -103,10 +103,12 @@ def main():
         for hist_addr in hist_list:
             print "Read file:", hist_addr
             his = np.load(hist_addr)
+            print his.shape
+
             if hist_total == []:
                 hist_total = his
             else:
-                hist_total = np.vstack([hist_total, his])                
+                hist_total = np.vstack([hist_total, his])
     # kmeans
     print hist_total.shape
     save_addr = './save_hist_model/'

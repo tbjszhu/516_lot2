@@ -188,10 +188,13 @@ def generate_histogram(layers, sub_window):
     """
     
     height, width, dim =  layers.shape
-    alloc_width = sub_window - 1
+    # a b
+    # d c
+    alloc_width = sub_window
     
     zeros = np.zeros((1,dim))
     hist = np.zeros_like(layers)
+
     for i in range(height):
         for j in range(width):
             if i < alloc_width or j < alloc_width: # treatment for edge element
@@ -209,8 +212,8 @@ def generate_histogram(layers, sub_window):
             else:
                 d = layers[i,j-alloc_width]
 
-            c = layers[i,j]   
-            hist_pix = c + a - d - b
+            c = layers[i, j]
+            hist_pix = 1.0*c + a - d - b
             '''if i == 200 and j == 200:
                 print "c", c
                 print "a",a
@@ -221,6 +224,7 @@ def generate_histogram(layers, sub_window):
             hist[i,j] = hist_pix  
     hist = np.reshape(hist, (height * width, dim))             
     return hist    
+
 
 # generator hists (global descriptors) from data (local descriptors or image)
 def generateHist(model, data, data_type, nfeatures, decpt_type):
@@ -462,3 +466,22 @@ def pr_csv_generation(target_dir, sub_hist_addr, kmeans, nfeatures, descriptor_t
         score_global_str = map(str, score_global)
         csv_deinit(csvfile, writer, score_global_str)
         pr_image_generate(pr_list, descriptor_type, kmeans, nfeatures)
+
+
+def colorizeImage(shape, label):
+    """
+    :param shape: output image shape (h,w)
+    :param label: kmeans hist prediction
+    :return: RGB image of segmentation
+    """
+    # show segmentation result
+
+    tmp = np.zeros((shape[0],shape[1],3))
+    map_label2color = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (100, 0, 0), (0, 100, 0), (0, 0, 100),
+                       (200, 100, 0), (100, 200, 0)]
+    count = 0
+    for i in range(tmp.shape[0]):
+        for j in range(tmp.shape[1]):
+            tmp[i, j, :] = map_label2color[label[count]]
+            count += 1
+    return tmp

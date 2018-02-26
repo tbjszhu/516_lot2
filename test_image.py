@@ -37,74 +37,64 @@ def main():
     init_value = kmeans.get_params()['init']
     
     # train histogram
-    test_dir = "./image_test/"   
-    desp_save_dir = "./descriptor/"
-    hist_dir = "./hist/"
+    test_dir = "./image_test/"
+    desp_save_dir = "./descriptor/test/"
+    hist_dir = "./hist/cv3/"
     image_list = getFileListFromDir(test_dir, filetype='npy')
-    hist_list = getFileListFromDir(hist_dir, filetype='npy')
-    hist_num = len(hist_list)
-    hist_total = []
+    #hist_list = getFileListFromDir(hist_dir, filetype='npy')
+    #hist_num = len(hist_list)
+    #hist_total = []
+
+    if not os.path.exists(desp_save_dir):
+        os.makedirs(desp_save_dir)
     
-    test_image = "nessne04"
-    test_addr = test_dir + test_image + "_dsp.jpg"
-    print "teating image : ", test_addr
+    test_image = "a6024_070sml"
+    test_addr = test_dir + test_image + ".jpg"
+    desp_path = desp_save_dir+test_image+'_dsp.npy'
+    print "treating image : ", test_addr
     test_image = test_addr.split('/')[-1].split('.')[0]
-    desp_list = getFileListFromDir(desp_save_dir, filetype='npy')
-    desp_exit = False
-    for despfile in desp_list:
-        if test_image in despfile:
-            desp_exist = True
+
+    desp_exist = False
+    if os.path.exists(desp_path):
+        desp_exist = True
             
     if desp_exist:
         print "reading exist descriptor file"     
-        des = np.load(desp_save_dir + test_image + ".npy")
+        des = np.load(desp_path)
     else:
         print "creating descriptor"
+        print test_addr
         img = cv2.imread(test_addr)
         img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)        
-        des = descriptor_generator(img_lab)
-        
+        des = descriptor_generator(img_lab) #no padding , so the output shape != input shape
+        np.save(desp_path, des)
+
     lines = des.shape[0] * des.shape[1]
     des_reshape = np.reshape(des, (lines, desp_dim))
     label = kmeans.predict(des_reshape)
     label_reshape = np.reshape(label, (des.shape[0], des.shape[1])) 
-    label_pixel = label_reshape * 15
+    #label_pixel = label_reshape
+    #plt.figure(1)
     #plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
     #plt.show()
     
-    # get 12 layer image
+    # get 12 layer integral images
     layer_num = kmeans.get_params()['n_clusters']
     layers = np.zeros((label_reshape.shape[0], label_reshape.shape[1], layer_num))
     for layer in range(layer_num):
         tmp = label_reshape.copy()
         tmp[tmp==layer] = normalize_value
-        tmp[tmp!=255] = 0
-        '''plt.imshow(tmp.astype(np.uint8),cmap ="gray")
-        plt.show()  
-        plt.close()'''      
+        tmp[tmp!=normalize_value] = 0
         integral = generate_integral_image(tmp, normalize_value)
-        '''plt.imshow(integral, cmap ="gray")
-        plt.show()
-        plt.close()'''
-        layers[:,:,layer] = integral[0:-1,0:-1].copy()
+
+        #plt.imshow(integral, cmap ="gray")
+        #plt.show()
+        #plt.close()
+        layers[:,:,layer] = integral[0:-1, 0:-1].copy()
         
     # generate histogram        
-    hist_addr = hist_dir + test_image            
-    hist = generate_histogram(layers,sub_window)
-    print hist.shape
-    
-    # debug
-    '''print hist.shape, label_reshape.shape    
-    hist_reshape = np.reshape(hist, (label_reshape.shape[0], label_reshape.shape[1],12))
-    hist_pixel = np.zeros(label_reshape.shape)
-    for i in range(label_reshape.shape[0]):
-        for j in range(label_reshape.shape[1]):
-            for k in range(12):
-                if hist_reshape[i,j,k] == np.max(hist_reshape[i,j,:]):
-                    hist_pixel[i,j] = (hist_reshape[i,j,k])
-    plt.imshow(hist_pixel,cmap ="gray")
-    plt.show()
-    plt.close()'''
+    hist_addr = hist_dir + test_image
+    his = generate_histogram(layers, sub_window)
                
     # read kmeans hist
     save_addr = './save_hist_model'
@@ -127,14 +117,21 @@ def main():
     else:
         print "please generate kmeans model for hist"
         sys.exit(0)
-        
+
     # predict hist for test image
-    label_hist = kmeans_hist.predict(hist)
-    label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
-    plt.imshow(label_hist_reshape,cmap ="gray")
+    original = cv2.imread(test_addr)[1:-1, 1:-1, :]
+    label_hist = kmeans_hist.predict(his)
+    col_img = colorizeImage(original.shape,label_hist)
+
+    #label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
+
+    #show images
+    plt.figure(1)
+    plt.imshow(original)
+    plt.figure(2)
+    plt.imshow(col_img)
     plt.show()
     plt.close()
-            
 if __name__ == "__main__":
     '''parser = argparse.ArgumentParser()
     parser.add_argument("-n", type=int, default=50,
