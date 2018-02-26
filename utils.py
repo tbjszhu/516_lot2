@@ -139,6 +139,27 @@ def generator_descriptor(fileaddr, save_addr):
             des = descriptor_generator(data)
             np.save(save_addr+'/'+filename_des+'_dsp', des)
 
+def convert_BGR2LAB(addr):
+    img = cv2.imread(addr)
+    img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    return img_lab
+                
+def read_kmeans_init(desp_init_dir):
+    desp_init_list = getFileListFromDir(desp_init_dir, filetype='npy')
+    desp_init_num = len(desp_init_list)    
+    
+    if desp_init_num == 0:
+        print "please generate init cluster center for kmeans"
+        sys.exit(0)
+        
+    init_value = []
+    for npyfile in desp_init_list:
+        if init_value == []:
+            init_value = np.load(npyfile)
+        else:
+            init_value = np.vstack((init_value, np.load(npyfile)))
+    return init_value
+            
 def generate_kmeans_model(save_addr, n_clusters, ndarray, train_data):
     kmeans = KMeans(n_clusters, init=ndarray, random_state=0).fit(train_data)  
     if os.path.exists(save_addr) == False:

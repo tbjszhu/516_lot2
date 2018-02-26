@@ -1,10 +1,15 @@
 from sklearn.externals import joblib
 import argparse
 import cv2
+from utils import *
+
+desp_dim = 11
+
 def main():
 
     # decide whether a model exist
     save_addr = './save_model'
+    model_dir = ''
     model_exist = False
     model_list = getFileListFromDir(save_addr, filetype='pkl')
     if cv2.__version__[0] == '3':
@@ -14,17 +19,41 @@ def main():
     for filename in model_list:
         if prefix in filename:
             print "kmeans model exists"
-            model_exist = True 
-            
+            model_exist = True
+            model_addr = filename 
+    print "Kmeans model addr : " + model_addr     
     if model_exist:
-        kmeans = joblib.load(model_dir) # load pre-trained k-means model #
-        print ('kmeans parameters', kmeans.get_params())
+        kmeans = joblib.load(model_addr) # load pre-trained k-means model #
+         #print ('kmeans parameters', kmeans.get_params())
     else:
         print "please generate kmeans model"
         sys.exit(0)
         
-    # classification
-        
+    # get k-means init value
+    init_value = kmeans.get_params()['init']
+    # get classisave_modelfication result for init value
+    label = kmeans.predict(init_value)
+    #print kmeans.cluster_centers_
+    
+    # test image
+    test_addr = "./image_jpg/nessne04.jpg"
+    img = cv2.imread(test_addr)
+    img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)        
+    des = descriptor_generator(img_lab)
+    lines = des.shape[0] * des.shape[1]
+    des_reshape = np.reshape(des, (lines, desp_dim))
+    label = kmeans.predict(des_reshape)
+    print label.shape
+    label_pixel = label * 10
+    label_reshape = np.reshape(label_pixel, (des.shape[0], des.shape[1]))
+    print label_reshape.shape
+    cv2.imshow('mid', label_reshape.astype(np.uint8))
+    if cv2.waitKey(0) & 0xff == 27:
+        cv2.destroyAllWindows()      
+    
+    
+    
+    
                 
                
     

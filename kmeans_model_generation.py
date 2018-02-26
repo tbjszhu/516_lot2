@@ -20,8 +20,7 @@ def main():
         for addr in image_list:
             #print addr
             filename = addr.split('/')[-1].split('.')[0]
-            img = cv2.imread(addr)
-            img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            img_lab = convert_BGR2LAB(addr)
             np.save("./image_lab/"+filename, img_lab)            
         lab_list = getFileListFromDir(lab_dir, filetype='npy')
         lab_num = len(lab_list)
@@ -71,22 +70,10 @@ def main():
                                   
     # read k-means init value            
     desp_init_dir = "./descriptor_init/"
-    desp_init_list = getFileListFromDir(desp_init_dir, filetype='npy')
-    desp_init_num = len(desp_init_list)    
-    
-    if desp_init_num == 0:
-        print "please generate init cluster center for kmeans"
-        sys.exit(0)
-        
-    init_value = []
-    for npyfile in desp_init_list:
-        if init_value == []:
-            init_value = np.load(npyfile)
-        else:
-            init_value = np.vstack((init_value, np.load(npyfile)))
-     #print init_value
+    init_value = read_kmeans_init(desp_init_dir)
         
     # k-means model generation
+    save_addr = './save_model/'
     n_clusters = desp_init_num
     ndarray = init_value #(n_clusters, n_features)
     print "Kmeans shape : " + str(ndarray.shape)

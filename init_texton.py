@@ -35,7 +35,7 @@ def main():
     generator_descriptor(img_dir, save_dir)
     rectangle = [0,0,0,0] # x start pos, y start pos, height, width for the texton example window
     
-    image_list = getImageListFromDir(img_dir, filetype='jpg')
+    image_list = getFileListFromDir(img_dir, filetype='jpg')
     show = True
     for addr in image_list:
         filename = addr.split('/')[-1].split('.')[0]
