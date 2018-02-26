@@ -59,7 +59,7 @@ def main():
                     desp_exist = True
                     
             if desp_exist:
-                print "reading exist descriptor file"     
+                print "reading exist descriptor file", despfile    
                 des = np.load(desp_save_dir + test_image + ".npy")
             else:
                 print "creating descriptor"

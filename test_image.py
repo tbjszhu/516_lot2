@@ -9,7 +9,7 @@ desp_dim = 11
 normalize_value = 255
 sub_window = 32
 
-def main():
+def main(test_image):
 
     # decide whether a model exist
     save_addr = './save_model'
@@ -45,7 +45,7 @@ def main():
     hist_num = len(hist_list)
     hist_total = []
     
-    test_image = "nessne04"
+    #test_image = "nessne04"
     test_addr = test_dir + test_image + "_dsp.jpg"
     print "teating image : ", test_addr
     test_image = test_addr.split('/')[-1].split('.')[0]
@@ -91,17 +91,15 @@ def main():
     # generate histogram        
     hist_addr = hist_dir + test_image            
     hist = generate_histogram(layers,sub_window)
-    print hist.shape
     
-    # debug
-    '''print hist.shape, label_reshape.shape    
-    hist_reshape = np.reshape(hist, (label_reshape.shape[0], label_reshape.shape[1],12))
+    # debug   
+    '''hist_reshape = np.reshape(hist, (label_reshape.shape[0], label_reshape.shape[1],12))
     hist_pixel = np.zeros(label_reshape.shape)
     for i in range(label_reshape.shape[0]):
         for j in range(label_reshape.shape[1]):
             for k in range(12):
                 if hist_reshape[i,j,k] == np.max(hist_reshape[i,j,:]):
-                    hist_pixel[i,j] = (hist_reshape[i,j,k])
+                    hist_pixel[i,j] = k
     plt.imshow(hist_pixel,cmap ="gray")
     plt.show()
     plt.close()'''
@@ -131,26 +129,16 @@ def main():
     # predict hist for test image
     label_hist = kmeans_hist.predict(hist)
     label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
+    print np.max(label_hist_reshape)
     plt.imshow(label_hist_reshape,cmap ="gray")
     plt.show()
     plt.close()
             
 if __name__ == "__main__":
-    '''parser = argparse.ArgumentParser()
-    parser.add_argument("-n", type=int, default=50,
-                        help="Number of feature point for each image.")
-    parser.add_argument("-c", type=int, default=25,
-                        help="Number of cluster for kmeans")
-    parser.add_argument("-d", type=str, default='orb',
-                        help="Descriptor Type")                                               
-    parser.add_argument("--addr", type=str, default='./min_merged_train/',
-                        help="training set addr")                        
-
+    parser = argparse.ArgumentParser()                       
+    parser.add_argument("-i", type=str, default="nessne04",
+                        help="training set addr")
     args = parser.parse_args()
-    
-    train_addr = args.addr # './min_merged_train/' # path where train images lie
-    desptype= args.d #'orb'  # type of descriptors to be generated
-    nfeatures = args.n # 200 # Max quantity of kp, 0 as invalid for brief
-    n_clusters = args.c # 200 # Max quantity of kp, 0 as invalid for brief
-    print "train_addr : %s, desptype : %s, nfeatures : %d, nclusters : %d " % (train_addr, desptype, nfeatures, n_clusters)'''
-    main()
+    img_addr = args.i
+    print "img_addr : %s" % (img_addr)
+    main(img_addr)
