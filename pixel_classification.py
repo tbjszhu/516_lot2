@@ -40,7 +40,7 @@ def main():
     test_dir = "./image_jpg/"   
     desp_save_dir = "./descriptor/"
     hist_dir = "./hist/"
-    image_list = getFileListFromDir(desp_save_dir, filetype='npy')
+    image_list = getFileListFromDir(desp_save_dir, filetype='npy') # change to test_dir
     hist_list = getFileListFromDir(hist_dir, filetype='npy')
     hist_num = len(hist_list)
     hist_total = []
