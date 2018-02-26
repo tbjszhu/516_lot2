@@ -70,8 +70,25 @@ def main():
                                   
     # read k-means init value            
     desp_init_dir = "./descriptor_init/"
-    init_value = read_kmeans_init(desp_init_dir)
+    #init_value = read_kmeans_init(desp_init_dir)
         
+
+    desp_init_list = getFileListFromDir(desp_init_dir, filetype='npy')
+    desp_init_num = len(desp_init_list)    
+    
+    if desp_init_num == 0:
+        print "please generate init cluster center for kmeans"
+        sys.exit(0)
+        
+    init_value = []
+    for npyfile in desp_init_list:
+        if init_value == []:
+            init_value = np.load(npyfile)
+        else:
+            init_value = np.vstack((init_value, np.load(npyfile)))
+     #print init_value
+
+
     # k-means model generation
     save_addr = './save_model/'
     n_clusters = desp_init_num
