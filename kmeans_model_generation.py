@@ -11,9 +11,11 @@ def main():
     image_num = len(image_list)
     
     lab_dir = "./image_lab/"
+    if os.path.exists(lab_dir) == False:
+        os.makedirs(lab_dir) 
     lab_list = getFileListFromDir(lab_dir, filetype='npy')
     lab_num = len(lab_list)
-    
+   
     # convert image from RGB format to LAB fromat if necessary
     if lab_num != image_num:
         print "Converting to format LAB"
@@ -28,6 +30,8 @@ def main():
         print "LAB image exists"
 
     desp_save_dir = "./descriptor/"
+    if os.path.exists(desp_save_dir) == False:
+        os.makedirs(desp_save_dir) 
     desp_list = getFileListFromDir(desp_save_dir, filetype='npy')
     desp_num = len(desp_list)
     
@@ -42,7 +46,7 @@ def main():
             
             # reshape descriptor from 3D to 2D
             des_quantity = des.shape[0] * des.shape[1]
-            des_reshape = np.reshape(des_reshape, (des_quantity, desp_dim))
+            des_reshape = np.reshape(des, (des_quantity, desp_dim))
             
             if train_data == []:
                 train_data = des_reshape

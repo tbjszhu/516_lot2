@@ -116,7 +116,7 @@ def main(test_image, model, hist_model):
         prefix = 'cv3'
     else:
         prefix = 'cv2'
-    for filename in model_list:
+    for filename in model_list: # choose the kmeans model to use
         if prefix in filename:
             print "Hist kmeans model exists"
             model_exist = True
@@ -125,7 +125,7 @@ def main(test_image, model, hist_model):
                 if hist_model in filename: # "road" is the key word for searching model name
                     model_addr = filename
                     break
-            else:                
+            elif hist_model == "8" and hist_model in filename:                
                 if model == "12":
                     if "road" not in filename: # "road" is the key word for searching model name
                         model_addr = filename
@@ -185,7 +185,7 @@ if __name__ == "__main__":
                         help="test image name")
     parser.add_argument("-d", type=str, default="16",
                         help="kmeans desp model version 12 or 16")
-    parser.add_argument("-g", type=str, default="8",
+    parser.add_argument("-g", type=str, default="12",
                         help="kmeans hist model version 8 or 12")                    
     args = parser.parse_args()
     img_addr = args.i

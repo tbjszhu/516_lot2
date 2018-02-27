@@ -533,7 +533,7 @@ def fusionImage(img, shape, label, model, hist_model):
                 if label[count] == 0 or label[count] == 2 or label[count] == 7:
                     tmp[i, j, :] = map_label2color[0]
             elif hist_model == "12":
-                if label[count] == 0 or label[count] == 2 or label[count] == 7:
+                if label[count] == 1 or label[count] == 2:
                     tmp[i, j, :] = map_label2color[0]
             count += 1
     return tmp    
