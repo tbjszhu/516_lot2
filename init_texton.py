@@ -83,8 +83,8 @@ def main():
             
         # cement road    
         if filename == "nessne04":
-            rectangle = [270,190,200,100]
-            texton_name = 'road'
+            rectangle = [370,290,100,100]
+            texton_name = 'cement road'
             texton = local_texton_generation(addr, rectangle, texton_name, show)
             print texton
             np.save("./descriptor_init/"+texton_name, texton)
@@ -117,9 +117,7 @@ def main():
         if filename == "wolfrun":
             rectangle = [330,270,140,170]
             texton_name = 'stone road'
-            show = True
-            texton = local_texton_generation(addr, rectangle, texton_name, show)
-            show = False            
+            texton = local_texton_generation(addr, rectangle, texton_name, show)            
             print texton
             np.save("./descriptor_init/"+texton_name, texton)                         
                               

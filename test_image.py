@@ -10,7 +10,7 @@ normalize_value = 255
 sub_window = 32
 
 
-def main(test_image):
+def main(test_image, model):
     # decide whether a model exist
     save_addr = './save_model'
     model_dir = ''
@@ -24,7 +24,8 @@ def main(test_image):
         if prefix in filename:
             print "kmeans model exists"
             model_exist = True
-            model_addr = filename
+            if model in filename:
+                model_addr = filename
     print "Kmeans model addr : " + model_addr
     if model_exist:
         kmeans = joblib.load(model_addr)  # load pre-trained k-means model #
@@ -69,10 +70,11 @@ def main(test_image):
     label = kmeans.predict(des_reshape)
     label_reshape = np.reshape(label, (des.shape[0], des.shape[1]))
     label_pixel = label_reshape * 15
-    # plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
-    # plt.show()
+    
+    plt.figure(1)
+    plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
 
-    # get 12 layer image
+    # get 16 layer image
     layer_num = kmeans.get_params()['n_clusters']
     layers = np.zeros((label_reshape.shape[0], label_reshape.shape[1], layer_num))
     for layer in range(layer_num):
@@ -117,7 +119,11 @@ def main(test_image):
         if prefix in filename:
             print "kmeans model exists"
             model_exist = True
-            model_addr = filename
+            if model == "12":
+                if "road" not in filename:
+                    model_addr = filename
+            else:
+                model_addr = filename
     print "Kmeans model addr : " + model_addr
     if model_exist:
         kmeans_hist = joblib.load(model_addr)  # load pre-trained k-means model
@@ -127,25 +133,50 @@ def main(test_image):
         sys.exit(0)
 
     # predict hist for test image
+    print hist.shape
     label_hist = kmeans_hist.predict(hist)
     original = cv2.imread(test_dir + test_image + ".jpg")[1:-1, 1:-1, :]
     original = cv2.cvtColor(original,cv2.COLOR_BGR2RGB)
     col_img = colorizeImage(original.shape,label_hist)
+    fus_img = fusionImage(original, original.shape,label_hist)
 
     #label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
 
     #show images
-    plt.figure(1)
-    plt.imshow(original)
+    """
     plt.figure(2)
+    plt.imshow(original)
+    plt.figure(3)
     plt.imshow(col_img)
+    plt.figure(4)
+    plt.imshow(fus_img)    
     plt.show()
+    """
+    f,((ax11,ax12),(ax21,ax22)) = plt.subplots(2,2)
+    ax11.set_title("Original")
+    ax11.imshow(original)
+    plt.axis("off")
+    ax12.imshow(col_img)
+    ax12.set_title("Descriptor K-means output")
+    plt.axis("off")
+    ax21.imshow(fus_img)
+    ax21.set_title("Histogram K-means output")
+    plt.axis("off")
+    ax22.imshow(fus_img)
+    ax22.set_title("Fusion output")
+    plt.axis("off")
+    plt.tight_layout()
+    plt.show()
+     
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", type=str, default="helston4",
-                        help="training set addr")
+                        help="test image name")
+    parser.add_argument("-m", type=str, default="16",
+                        help="kmeans model version 12 or 16")
     args = parser.parse_args()
     img_addr = args.i
+    model = args.m
     print "img_addr : %s" % (img_addr)
-    main(img_addr)
+    main(img_addr, model)
