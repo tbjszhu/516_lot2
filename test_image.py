@@ -37,7 +37,7 @@ def main(test_image):
     init_value = kmeans.get_params()['init']
 
     # train histogram
-    test_dir = "./image_test/"
+    test_dir = "./image_jpg/"
     desp_save_dir = "./descriptor/"
     hist_dir = "./hist/"
     image_list = getFileListFromDir(test_dir, filetype='npy')
@@ -46,18 +46,18 @@ def main(test_image):
     hist_total = []
 
     # test_image = "nessne04"
-    test_addr = test_dir + test_image + "_dsp.jpg"
+    test_addr = test_dir + test_image + ".jpg"
     print "teating image : ", test_addr
     test_image = test_addr.split('/')[-1].split('.')[0]
     desp_list = getFileListFromDir(desp_save_dir, filetype='npy')
-    desp_exit = False
+    desp_exist = False
     for despfile in desp_list:
         if test_image in despfile:
             desp_exist = True
 
     if desp_exist:
         print "reading exist descriptor file"
-        des = np.load(desp_save_dir + test_image + ".npy")
+        des = np.load(desp_save_dir + test_image + "_dsp.npy")
     else:
         print "creating descriptor"
         img = cv2.imread(test_addr)
@@ -128,7 +128,7 @@ def main(test_image):
 
     # predict hist for test image
     label_hist = kmeans_hist.predict(hist)
-    original = cv2.imread(test_dir + test_image[0:-4] + ".jpg")[1:-1, 1:-1, :]
+    original = cv2.imread(test_dir + test_image + ".jpg")[1:-1, 1:-1, :]
     original = cv2.cvtColor(original,cv2.COLOR_BGR2RGB)
     col_img = colorizeImage(original.shape,label_hist)
 

@@ -172,7 +172,7 @@ def generate_kmeans_model(train_data, save_addr, n_clusters, ndarray=None):
     else:
         prefix = 'cv2'
     # save k-means model for further use
-    joblib.dump(kmeans, save_addr + '/' + prefix + '_kmeans_' + str(n_clusters) + '.pkl')
+    joblib.dump(kmeans, save_addr + '/' + prefix + '_kmeans_road_' + str(n_clusters) + '.pkl')
 
 def generate_integral_image(tmp, normalize_value):
     tmp = 1.0*tmp/normalize_value

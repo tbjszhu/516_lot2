@@ -24,9 +24,10 @@ def local_texton_generation(addr, rectangle, texton_name, show = False):
     des = descriptor_generator(img_lab_local)
     texton = np.mean(np.mean(des, axis = 1), axis = 0) # get the descriptor average for this texton
     if show == True:
-        cv2.imshow(texton_name,img)
-        if cv2.waitKey(0) & 0xff == 27:
-            cv2.destroyAllWindows()                 
+        plt.title(texton_name)
+        plt.imshow(img)
+        plt.show()
+        plt.close()                
     return texton
      
 def main():
@@ -36,7 +37,7 @@ def main():
     rectangle = [0,0,0,0] # x start pos, y start pos, height, width for the texton example window
     
     image_list = getFileListFromDir(img_dir, filetype='jpg')
-    show = True
+    show = False
     for addr in image_list:
         filename = addr.split('/')[-1].split('.')[0]
         
@@ -80,13 +81,47 @@ def main():
             print texton
             np.save("./descriptor_init/"+texton_name, texton)
             
-        # road    
+        # cement road    
         if filename == "nessne04":
-            rectangle = [370,290,100,100]
+            rectangle = [270,190,200,100]
             texton_name = 'road'
             texton = local_texton_generation(addr, rectangle, texton_name, show)
             print texton
-            np.save("./descriptor_init/"+texton_name, texton) 
+            np.save("./descriptor_init/"+texton_name, texton)
+            
+        # sand road   
+        if filename == "gilmore":
+            rectangle = [280,170,180,350]
+            texton_name = 'sand road'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+            
+        # oil road   
+        if filename == "lsampford1":
+            rectangle = [300,256,200,330]
+            texton_name = 'oil road'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+
+        # wet road   
+        if filename == "follymill2":
+            rectangle = [390,360,120,150]
+            texton_name = 'wet road'
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)
+
+        # stone road   
+        if filename == "wolfrun":
+            rectangle = [330,270,140,170]
+            texton_name = 'stone road'
+            show = True
+            texton = local_texton_generation(addr, rectangle, texton_name, show)
+            show = False            
+            print texton
+            np.save("./descriptor_init/"+texton_name, texton)                         
                               
         # car    
         if filename == "much4":
