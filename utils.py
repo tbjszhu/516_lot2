@@ -164,6 +164,7 @@ def generate_kmeans_model(train_data, save_addr, n_clusters, ndarray=None):
     if ndarray == None:
         kmeans = KMeans(n_clusters, random_state=0).fit(train_data)
     else:
+        pass
         kmeans = KMeans(n_clusters, init=ndarray, random_state=0).fit(train_data)  
     if os.path.exists(save_addr) == False:
         os.mkdir(save_addr)
@@ -467,17 +468,20 @@ def pr_csv_generation(target_dir, sub_hist_addr, kmeans, nfeatures, descriptor_t
         csv_deinit(csvfile, writer, score_global_str)
         pr_image_generate(pr_list, descriptor_type, kmeans, nfeatures)
 
-def colorizeImage(shape, label):
+def colorizeImage(shape, label, hist_model):
     """
     :param shape: output image shape (h,w)
     :param label: kmeans hist prediction
     :return: RGB image of segmentation
     """
     # show segmentation result
-
     tmp = np.zeros((shape[0],shape[1],3))
-    map_label2color = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (100, 0, 0), (0, 100, 0), (0, 0, 100),
-                       (200, 100, 0), (100, 200, 0)]
+    if hist_model == "8":
+        map_label2color = [(200, 180, 0), (0, 200, 180), (180, 0, 200), (100, 0, 0), (0, 100, 0), (0, 0, 100),
+                           (200, 100, 0), (100, 200, 0)]
+    elif hist_model == "12":
+        map_label2color = [(200, 180, 0), (0, 200, 180), (180, 0, 200), (100, 0, 0), (0, 100, 0), (0, 0, 100),
+                           (200, 100, 0), (100, 200, 0),(100, 50, 0), (0, 100, 50), (50, 0, 100), (200, 100, 100)]    
     count = 0
     for i in range(tmp.shape[0]):
         for j in range(tmp.shape[1]):
@@ -486,26 +490,25 @@ def colorizeImage(shape, label):
     return tmp
     
     
-def colorizeImage_16(shape, label):
+def colorizeImage_16(label, shape):
     """
-    :param shape: output image shape (h,w)
-    :param label: kmeans hist prediction
+    :param label: pixel kmeans prediction
     :return: RGB image of segmentation
     """
     # show segmentation result
-
-    tmp = np.zeros((shape[0],shape[1],3))
+    tmp = np.zeros((shape[0], shape[1], 3))
     map_label2color = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (100, 0, 0), (0, 100, 0), (0, 0, 100),
-                       (200, 100, 0), (100, 200, 0)]
+                       (200, 100, 0), (100, 200, 0), (255, 100, 0), (100, 255, 0), (0, 100, 255),(100, 50, 0), (0, 100, 50), (50, 0, 100), (200, 100, 100), (100, 200, 100)]
+                       
     count = 0
     for i in range(tmp.shape[0]):
         for j in range(tmp.shape[1]):
+            map_label2color[label[count]]
             tmp[i, j, :] = map_label2color[label[count]]
             count += 1
     return tmp
-    fusionImage
     
-def fusionImage(img, shape, label):
+def fusionImage(img, shape, label, model, hist_model):
     """
     :param shape: output image shape (h,w)
     :param label: kmeans hist prediction
@@ -514,12 +517,23 @@ def fusionImage(img, shape, label):
     # show segmentation result
 
     tmp = img.copy()
-    map_label2color = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (100, 0, 0), (0, 100, 0), (0, 0, 100),
-                       (200, 100, 0), (100, 200, 0)]
+    if hist_model == "8":
+        map_label2color = [(200, 180, 0), (0, 200, 180), (180, 0, 200), (100, 0, 0), (0, 100, 0), (0, 0, 100),
+                           (200, 100, 0), (100, 200, 0)]
+    elif hist_model == "12":
+        map_label2color = [(200, 180, 0), (0, 200, 180), (180, 0, 200), (100, 0, 0), (0, 100, 0), (0, 0, 100),
+                           (200, 100, 0), (100, 200, 0),(100, 50, 0), (0, 100, 50), (50, 0, 100), (200, 100, 100)] 
     count = 0
     for i in range(tmp.shape[0]):
         for j in range(tmp.shape[1]):
-            if label[count] == 0 or label[count] == 7:
-                tmp[i, j, :] = map_label2color[0]
+            if model == "12" and hist_model == "8":
+                if label[count] == 0 or label[count] == 6 or label[count] == 7:
+                    tmp[i, j, :] = map_label2color[0]
+            elif model == "16" and hist_model == "8":
+                if label[count] == 0 or label[count] == 2 or label[count] == 7:
+                    tmp[i, j, :] = map_label2color[0]
+            elif hist_model == "12":
+                if label[count] == 0 or label[count] == 2 or label[count] == 7:
+                    tmp[i, j, :] = map_label2color[0]
             count += 1
     return tmp    

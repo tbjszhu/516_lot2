@@ -110,9 +110,8 @@ def main():
             else:
                 hist_total = np.vstack([hist_total, his])
     # kmeans
-    print hist_total.shape
     save_addr = './save_hist_model/'
-    n_clusters = 8
+    n_clusters = 12 # 8
     generate_kmeans_model(hist_total, save_addr, n_clusters)
     
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ normalize_value = 255
 sub_window = 32
 
 
-def main(test_image, model):
+def main(test_image, model, hist_model):
     # decide whether a model exist
     save_addr = './save_model'
     model_dir = ''
@@ -21,11 +21,12 @@ def main(test_image, model):
     else:
         prefix = 'cv2'
     for filename in model_list:
-        if prefix in filename:
-            print "kmeans model exists"
+        if prefix in filename and model in filename:
+            print "Pixel kmeans model exists"
             model_exist = True
-            if model in filename:
-                model_addr = filename
+            model_addr = filename
+            break
+            
     print "Kmeans model addr : " + model_addr
     if model_exist:
         kmeans = joblib.load(model_addr)  # load pre-trained k-means model #
@@ -68,11 +69,11 @@ def main(test_image, model):
     lines = des.shape[0] * des.shape[1]
     des_reshape = np.reshape(des, (lines, desp_dim))
     label = kmeans.predict(des_reshape)
-    label_reshape = np.reshape(label, (des.shape[0], des.shape[1]))
-    label_pixel = label_reshape * 15
-    
-    plt.figure(1)
-    plt.imshow(label_reshape.astype(np.uint8),cmap ="gray")
+    label_reshape = np.reshape(label, (des.shape[0], des.shape[1]))    
+    pixel_kmeans = colorizeImage_16(label, label_reshape.shape)
+    # plt.figure(1)
+    # plt.imshow(pixel_kmeans.astype(np.uint8))
+
 
     # get 16 layer image
     layer_num = kmeans.get_params()['n_clusters']
@@ -117,19 +118,28 @@ def main(test_image, model):
         prefix = 'cv2'
     for filename in model_list:
         if prefix in filename:
-            print "kmeans model exists"
+            print "Hist kmeans model exists"
             model_exist = True
-            if model == "12":
-                if "road" not in filename:
+            model_addr = filename
+            if hist_model == "12":
+                if hist_model in filename: # "road" is the key word for searching model name
                     model_addr = filename
-            else:
-                model_addr = filename
+                    break
+            else:                
+                if model == "12":
+                    if "road" not in filename: # "road" is the key word for searching model name
+                        model_addr = filename
+                        break
+                elif model == "16":
+                    if "road" in filename:
+                        model_addr = filename
+                        break
+                
     print "Kmeans model addr : " + model_addr
     if model_exist:
         kmeans_hist = joblib.load(model_addr)  # load pre-trained k-means model
-        # print ('kmeans parameters', kmeans.get_params())
     else:
-        print "please generate kmeans model for hist"
+        print "please generate kmeans model for histogram"
         sys.exit(0)
 
     # predict hist for test image
@@ -137,8 +147,8 @@ def main(test_image, model):
     label_hist = kmeans_hist.predict(hist)
     original = cv2.imread(test_dir + test_image + ".jpg")[1:-1, 1:-1, :]
     original = cv2.cvtColor(original,cv2.COLOR_BGR2RGB)
-    col_img = colorizeImage(original.shape,label_hist)
-    fus_img = fusionImage(original, original.shape,label_hist)
+    col_img = colorizeImage(original.shape,label_hist, hist_model)
+    fus_img = fusionImage(original, original.shape,label_hist, model,hist_model)
 
     #label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
 
@@ -156,10 +166,10 @@ def main(test_image, model):
     ax11.set_title("Original")
     ax11.imshow(original)
     plt.axis("off")
-    ax12.imshow(col_img)
+    ax12.imshow(pixel_kmeans)
     ax12.set_title("Descriptor K-means output")
     plt.axis("off")
-    ax21.imshow(fus_img)
+    ax21.imshow(col_img)
     ax21.set_title("Histogram K-means output")
     plt.axis("off")
     ax22.imshow(fus_img)
@@ -173,10 +183,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", type=str, default="helston4",
                         help="test image name")
-    parser.add_argument("-m", type=str, default="16",
-                        help="kmeans model version 12 or 16")
+    parser.add_argument("-d", type=str, default="16",
+                        help="kmeans desp model version 12 or 16")
+    parser.add_argument("-g", type=str, default="8",
+                        help="kmeans hist model version 8 or 12")                    
     args = parser.parse_args()
     img_addr = args.i
-    model = args.m
+    model = args.d
+    hist_model = args.g
+    if hist_model == "12":
+        model = "16"
     print "img_addr : %s" % (img_addr)
-    main(img_addr, model)
+    main(img_addr, model, hist_model)
