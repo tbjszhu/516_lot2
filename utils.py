@@ -287,13 +287,7 @@ def fusionImage(img, shape, label, model, hist_model, filter_enable, ed_enable):
                     tmp[i, j, :] = map_label2color[0]
             elif hist_model == "12":
                 if label[count] == 1 or label[count] == 2 or label[count] == 4:
-                    tmp[i, j, :] = map_label2color[0]
-                    '''if label[count] == 1:
-                        layers[0,i,j] = 1
-                    elif label[count] == 2:
-                        layers[1,i,j] = 1
-                    elif label[count] == 4:
-                        layers[2,i,j] = 1 '''                   
+                    tmp[i, j, :] = map_label2color[0]                   
             count += 1 
     return tmp
     
@@ -319,19 +313,23 @@ def filter(label, shape, ed_enable):
             count += 1 
             
     if ed_enable:        
-        # erode and dilate
+        # image erode and dilate to delete noise region
         eroded_ratio = 0.06
         eroded_kernel_width = int(shape[0]*eroded_ratio)
         eroded_kernel_height = int(shape[1]*eroded_ratio)
         eroded_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(eroded_kernel_height,eroded_kernel_height))
-
+        
         dilated_ratio = 0.10
         dilated_kernel_width = int(shape[0]*dilated_ratio)
         dilated_kernel_height = int(shape[1]*dilated_ratio)
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(dilated_kernel_height,dilated_kernel_height))    
 
-        for k in range(target_layers):    
+        for k in range(target_layers):
+            plt.imshow(layers[k],cmap ="gray")
+            plt.show()            
             eroded = cv2.erode(layers[k], eroded_kernel)
+            plt.imshow(layers[k],cmap ="gray")
+            plt.show()              
             dilated = cv2.dilate(eroded, dilated_kernel)
             layers[k] = dilated    
     

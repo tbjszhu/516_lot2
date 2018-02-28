@@ -39,7 +39,7 @@ def main(img_addr, model, hist_model, filter_enable, ed_enable):
     init_value = kmeans.get_params()['init']
 
     # train histogram
-    test_dir = "./image_test/"
+    test_dir = "./image_jpg/"
     desp_save_dir = "./descriptor/"
     hist_dir = "./hist/"
     image_list = getFileListFromDir(test_dir, filetype='jpg')
@@ -168,20 +168,24 @@ def main(img_addr, model, hist_model, filter_enable, ed_enable):
         f,((ax11,ax12),(ax21,ax22)) = plt.subplots(2,2)
         ax11.set_title("Original")
         ax11.imshow(original)
-        plt.axis("off")
+        ax11.set_axis_off()
         ax12.imshow(pixel_kmeans)
         ax12.set_title("Descriptor K-means output")
-        plt.axis("off")
+        ax12.set_axis_off()
         ax21.imshow(col_img)
         ax21.set_title("Histogram K-means output")
-        plt.axis("off")
+        ax21.set_axis_off()
         ax22.imshow(fus_img)
         ax22.set_title("Fusion output")
-        plt.axis("off")
+        ax22.set_axis_off()
         plt.tight_layout()
-        plt.show()
+        #plt.show()
         
-        #fus_img
+        rst_dir = "./image_result/"
+        if os.path.exists(rst_dir) == False:
+            os.makedirs(rst_dir)       
+        
+        plt.savefig(rst_dir + test_image + ".jpg")
      
 
 if __name__ == "__main__":
