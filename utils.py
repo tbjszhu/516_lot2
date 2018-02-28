@@ -1,22 +1,14 @@
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 import glob
 import os
-from itertools import groupby
 import sys
-from collections import OrderedDict
-import random
-import csv
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import auc
 from sklearn.cluster import KMeans
 from sklearn.externals import joblib
-import time
+from matplotlib import pyplot as plt
 
 # Read images/masks from a directory
-train_width = 10 # the number of train images for each class
-opposite_image_num = 10 # the number of opposite images for each class
+target_layers = 3 # number of road cluster 
 
 def getFileListFromDir(img_dir, filetype='png'):
     """
@@ -226,248 +218,6 @@ def generate_histogram(layers, sub_window):
     hist = np.reshape(hist, (height * width, dim))             
     return hist    
 
-
-# generator hists (global descriptors) from data (local descriptors or image)
-def generateHist(model, data, data_type, nfeatures, decpt_type):
-    """
-    :param model: k-means model trained by descriptors in database.
-    :param data: numpy array grayscale image for getting histo or local descriptors for an images
-    :param data_type : string, "dscpt" or "image"
-    :param decpt_type : string , type of descriptor, e.g. "orb"
-    :return: an histogramme for the given data
-    """
-
-    if data_type == "dscpt":
-        # from k-means prediction to histogram (global descriptor) (#bins = #classes)
-        res = np.zeros((1, model.get_params()['n_clusters']), dtype=np.float32)
-        if data is None:  # if orb cannot get any keypoints
-            return res
-
-        label = model.predict(data)
-        for value in label:
-            res[0, value] += 1.0
-
-        return res / np.sum(res)  # normalized histogram
-
-    elif data_type == "image":
-
-        if decpt_type == "orb":
-            kp, des = orb_descriptor_generator(data, nfeatures)
-
-        elif decpt_type == "brief":
-            kp, des = brief_descriptor_generator(data, nfeatures)
-
-        elif decpt_type == "sift":
-            kp, des = SIFT_descriptor_generator(data, nfeatures)
-        else:
-            print "Algo : " + decpt_type + " is not supported"
-
-        # from k-means prediction to histogram (#bins = #classes)
-        res = np.zeros((1, model.get_params()['n_clusters']), dtype=np.float32)
-        if des is None:  # if orb cannot get any keypoints
-            return res
-        des = np.asarray(des, dtype=np.float32)
-        #des_float = []
-        #for i in range(len(des)):  # convert des from int to float to avoid type warning
-        #    des_float.append(map(float, des[i]))
-        label = model.predict(des)
-        for value in label:
-            res[0, value] += 1.0
-        return res / np.sum(res)  # normalized histogram
-
-    else:
-        print ("data type error")
-        return 0
-
-
-# search similar images of a given target (gs image) in terms of distance of hists.
-
-def searchFromBase(base_dir, target, model, nfeatures, descriptor_type, class_id = -1, has_hist = False):
-    """
-    :param base_dir: search base of images
-    :param target: target image numpy grayscale image
-    :param model : kmeans pretrained model
-    :param has_hist : bool, if true base_dir is the addr for the hists, else it is the addr for images
-    :return: a list of ranking of top 10 similars images, [ (index, distance value)] and a list of image dir
-    """
-    if has_hist:
-        imgs_addr = getHistListFromDir(base_dir)
-    else:
-        imgs_addr = getImageListFromDir(base_dir)
-    dist = {}
-    target_hist = generateHist(model, target, 'image', nfeatures, descriptor_type).astype(np.float32)
-    # print np.sum(target_hist)
-    
-    # calculate distance between target hist and base hists
-    for idx, img_addr in enumerate(imgs_addr):
-        img_gs = []
-        hist = []
-        if has_hist == False:
-            #print img_addr
-            img_gs = cv2.imread(img_addr, '0')
-            hist = generateHist(model, img_gs, 'image', descriptor_type)
-        else:
-            hist = np.load(img_addr)
-        dist[idx] = np.linalg.norm(hist - target_hist)  # eucudian distance
-
-    # get the top rankings
-    sorted_d = OrderedDict(sorted(dist.items(), key=lambda x: x[1]))
-    dictlist = []
-    for key, value in sorted_d.items():
-        temp = [key, value] # [index, distance]
-        class_actual = imgs_addr[key].split('/')[-1].split('_')[0]
-        if class_actual == str(class_id):
-            dictlist.append(temp)
-            filename = imgs_addr[key].split('/')[-1]
-            #print filename,value
-    return dictlist, imgs_addr
-
-
-def get_class_image_list(target_dir, class_name):
-    if target_dir[-1] != '/':
-        target_dir += '/'
-    l = glob.glob(target_dir + class_name + '/*/*')
-    return l
-
-
-def generate_random_image_list(image_list, class_name, class_start, class_num, num):
-    class_name = str(class_name)
-    image_list_temp = image_list[:]  # to store different image classes
-    same_class_image_count = 0
-    same_class_list = []
-
-    for item in image_list_temp:  # find the files from the same class
-        if str(class_name) in item:
-            same_class_list.append(item)
-            same_class_image_count += 1
-    for item in same_class_list:  # delete the files from the same class
-        image_list_temp.remove(item)
-
-    rand_file_num_list = []
-    while True:  # generate "num" defferent file num
-        rand_file_num = str(random.randint(class_start, class_start + (class_num - 1) * same_class_image_count - 1))
-        if (rand_file_num not in rand_file_num_list):
-            rand_file_num_list.append(rand_file_num)
-        else:
-            continue
-        if len(rand_file_num_list) == num:
-            break
-    rand_image_list = []
-    for item in rand_file_num_list:
-        rand_image_list.append(image_list_temp[int(item) - class_start])    
-    return rand_image_list, same_class_image_count
-
-def csv_init(csv_file_path, kmeans, nfeatures, class_name, class_width, descriptor_type):
-    csv_file_name = csv_file_path + '/kmeans_' + str(kmeans.get_params()['n_clusters']) + '_nf_' + str(nfeatures) + descriptor_type + '_class_' + class_name + '.csv'
-    if os.path.exists(csv_file_path) == False:
-        os.mkdir(csv_file_path)
-    csvfile = file(csv_file_name, 'wb')
-    index = range(class_width)
-    index_str = map(str, index)
-    file_header = ['id'] + index_str + ['Truth','Total']
-    writer = csv.writer(csvfile)
-    writer.writerow(file_header)
-    return csvfile, writer
-
-
-def csv_deinit(csvfile, writer, score_global):
-    writer.writerow(['Conclusion'] + score_global[:-1] + ["-"] + [score_global[-1]])
-    csvfile.close()    
-
-def pr_image_generate(pr_list,descriptor_type,kmeans, nfeatures):
-    """
-    :param pr_list: a list of lists (filename, label, score)
-    :param descriptor_type : string, descriptor type
-    :param nfeatures: max number of keypoints
-    :param kmeans : kmeans model
-    :return: None
-    """
-    y_test =  [] # label
-    y_score =  [] # prediction
-    cls = pr_list[0][0].split('_')[0]
-    for _, label, score in pr_list:
-        y_test.append(label)
-        y_score.append(score)
-
-    precision, recall, _ = precision_recall_curve(y_test, y_score)
-
-    plt.step(recall, precision, color='b', alpha=0.2,
-             where='post')
-    plt.fill_between(recall, precision, step='post', alpha=0.2,
-                     color='b')
-    area = auc(recall,precision)
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.ylim([0.0, 1.05])
-    plt.xlim([0.0, 1.0])
-    plt.title('class '+str(cls)+' '+str(descriptor_type)+'_k'+str(kmeans.get_params()['n_clusters'])+
-                '_nf'+str(nfeatures)+' Precision-Recall AUC ={0:0.2f}'.format(
-        area))
-    if os.path.exists('./pr_figures') is False:
-        os.mkdir('./pr_figures')
-    plt.savefig('./pr_figures/'+"class_"+str(cls)+' '+str(descriptor_type)+' k'+str(kmeans.get_params()['n_clusters'])+
-                ' nf'+str(nfeatures)+'.png')
-    plt.close() # do not forget to close your figure after savefig, else the figure will overlap.
-def pr_csv_generation(target_dir, sub_hist_addr, kmeans, nfeatures, descriptor_type, class_id = -1, has_hist=True):
-    
-    image_list = getImageListFromDir(target_dir)
-    class_list = []
-    dir_list = glob.glob(target_dir + '/*')
-    for item in dir_list:
-        class_list.append(item.split('/')[-1])
-    class_num = len(class_list)
-    class_start = int(class_list[0])
-
-    if class_num <= 0:
-        print "class_num 0 error"
-        sys.exit(0)
-    if class_id != -1:
-        class_id = str(class_id)
-        if class_id in class_list:
-            class_list = [class_id]
-        else:
-            print "class_id: %d not in class_list" % (class_id)
-
-    for class_name in class_list: # iteration for each class
-        pr_list = []
-        class_image_list = get_class_image_list(target_dir, class_name)
-        random_image_list, class_width = generate_random_image_list(image_list, class_name, class_start, class_num, opposite_image_num)
-        class_image_list.extend(random_image_list) # joint two lists together
-
-        csv_file_path = './pr_csv'
-        csvfile, writer = csv_init(csv_file_path, kmeans, nfeatures, class_name, train_width, descriptor_type)
-        score_global = [0] * (train_width + 1)
-        score_global_str = []
-        Truth = 0        
-        for target, target_filename in img_generator(class_image_list): # iteration for each test image from this class 
-            target_filename = target_filename.split('.')[0] #todo documentation
-            target_class = target_filename.split('_')[0]   #todo ducumentation
-
-            score_vector = [0] * train_width
-            score_total = 0
-            if target_class == class_name:
-                Truth = 1
-            else:
-                Truth = 0
-            results, imgs_list = searchFromBase(sub_hist_addr, target, kmeans, nfeatures, descriptor_type, class_name, has_hist=True)
-            count = 0
-            for key, value in results:
-                score = 1.0 / (value+0.001)
-                filename = imgs_list[key].split('/')[-1]
-                matched_class = filename.split('_')[0]
-                if matched_class == class_name:
-                    score_vector[count] = score
-                    score_global[count] += score
-                    score_total += score
-                count += 1
-            score_vector_str = map(str, score_vector)
-            writer.writerow([str(target_filename)] + score_vector + [str(Truth), str(score_total)])
-            pr_list.append([str(target_filename), Truth, score_total])  
-            score_global[-1] += score_total
-        score_global_str = map(str, score_global)
-        csv_deinit(csvfile, writer, score_global_str)
-        pr_image_generate(pr_list, descriptor_type, kmeans, nfeatures)
-
 def colorizeImage(shape, label, hist_model):
     """
     :param shape: output image shape (h,w)
@@ -524,6 +274,11 @@ def fusionImage(img, shape, label, model, hist_model):
         map_label2color = [(200, 180, 0), (0, 200, 180), (180, 0, 200), (100, 0, 0), (0, 100, 0), (0, 0, 100),
                            (200, 100, 0), (100, 200, 0),(100, 50, 0), (0, 100, 50), (50, 0, 100), (200, 100, 100)] 
     count = 0
+
+    filter_enable = True
+    if hist_model == "12" and filter_enable:
+        label = filter(label, shape).copy()
+            
     for i in range(tmp.shape[0]):
         for j in range(tmp.shape[1]):
             if model == "12" and hist_model == "8":
@@ -533,7 +288,89 @@ def fusionImage(img, shape, label, model, hist_model):
                 if label[count] == 0 or label[count] == 2 or label[count] == 7:
                     tmp[i, j, :] = map_label2color[0]
             elif hist_model == "12":
-                if label[count] == 1 or label[count] == 2:
+                if label[count] == 1 or label[count] == 2 or label[count] == 4:
                     tmp[i, j, :] = map_label2color[0]
-            count += 1
-    return tmp    
+                    '''if label[count] == 1:
+                        layers[0,i,j] = 1
+                    elif label[count] == 2:
+                        layers[1,i,j] = 1
+                    elif label[count] == 4:
+                        layers[2,i,j] = 1 '''                   
+            count += 1 
+    return tmp
+    
+def filter(label, shape):
+
+    layers = np.zeros((target_layers,shape[0],shape[1]))
+    image_height = shape[0]
+    height_thrs = image_height*0.6
+    surface = [0]*target_layers
+    surface_thrs = shape[0]*0.2*shape[1]*0.2
+    height = [0]*target_layers 
+    count = 0
+    
+    # divide label list in to cluster layer image
+    for i in range(shape[0]):
+        for j in range(shape[1]):    
+            if label[count] == 1:
+                layers[0,i,j] = 1
+            elif label[count] == 2:
+                layers[1,i,j] = 1
+            elif label[count] == 4:
+                layers[2,i,j] = 1
+            count += 1 
+            
+    ed_enable = True
+    if ed_enable:        
+        # erode and dilate
+        eroded_ratio = 0.06
+        eroded_kernel_width = int(shape[0]*eroded_ratio)
+        eroded_kernel_height = int(shape[1]*eroded_ratio)
+        eroded_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(eroded_kernel_height,eroded_kernel_height))
+
+        dilated_ratio = 0.10
+        dilated_kernel_width = int(shape[0]*dilated_ratio)
+        dilated_kernel_height = int(shape[1]*dilated_ratio)
+        dilated_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(dilated_kernel_height,dilated_kernel_height))    
+
+        for k in range(target_layers):    
+            eroded = cv2.erode(layers[k], eroded_kernel)
+            dilated = cv2.dilate(eroded, dilated_kernel)
+            layers[k] = dilated    
+    
+    # calculate the position(height) of the hot zone        
+    for k in range(target_layers):   
+        for i in range(shape[0]):
+            for j in range(shape[1]): 
+                if layers[k,i,j] == 1:
+                    surface[k] += 1
+                    height[k] += i
+        if surface[k]!= 0:            
+            height[k] = height[k]/surface[k]
+            print height[k], surface[k]
+        #plt.imshow(layers[k].astype(np.uint8),cmap ="gray")
+        #plt.show()
+        
+    label = np.zeros_like(label)
+    
+    # reset label
+    for k in range(target_layers):    
+        if height[k] < height_thrs:# and surface[k] < surface_thrs:
+            print "filtreing", k
+            layers[k,:,:] = 0
+        count = 0 
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if layers[k,i,j] == 1:
+                    if k == 0:
+                        label[count] = 1
+                    elif k == 1:
+                        label[count] = 2                        
+                    elif k == 2:
+                        label[count] = 4        
+                count += 1               
+    return label        
+          
+
+
+  

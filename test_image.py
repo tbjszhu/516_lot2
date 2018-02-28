@@ -3,7 +3,6 @@ import argparse
 import cv2
 from utils import *
 from matplotlib import pyplot as plt
-import time
 
 desp_dim = 11
 normalize_value = 255
@@ -177,11 +176,11 @@ def main(test_image, model, hist_model):
     plt.axis("off")
     plt.tight_layout()
     plt.show()
-     
+    plt.close()    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", type=str, default="helston4",
+    parser.add_argument("-i", type=str, default="helston3",
                         help="test image name")
     parser.add_argument("-d", type=str, default="16",
                         help="kmeans desp model version 12 or 16")
