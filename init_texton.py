@@ -7,6 +7,14 @@ import numpy as np
 dim = 3 # constant dimension for each pixel RGB or LAB
 
 def local_texton_generation(addr, rectangle, texton_name, show = False):
+    """
+    :param addr: image address
+    :param rectangle: the local texton extraction mask position
+    :param texton_name: label of the init texton
+    :param show: true or false to show or not the image with the texton extraction mask
+    :return: texton descriptor
+    """
+    
     img = cv2.imread(addr)
     img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 
@@ -170,21 +178,4 @@ def main():
             np.save("./descriptor_init/"+texton_name, texton)                                   
 
 if __name__ == "__main__":
-    '''parser = argparse.ArgumentParser()
-    parser.add_argument("-n", type=int, default=50,
-                        help="Number of feature point for each image.")
-    parser.add_argument("-c", type=int, default=25,
-                        help="Number of cluster for kmeans")
-    parser.add_argument("-d", type=str, default='orb',
-                        help="Descriptor Type")                                               
-    parser.add_argument("--addr", type=str, default='./min_merged_train/',
-                        help="training set addr")                        
-
-    args = parser.parse_args()
-    
-    train_addr = args.addr # './min_merged_train/' # path where train images lie
-    desptype= args.d #'orb'  # type of descriptors to be generated
-    nfeatures = args.n # 200 # Max quantity of kp, 0 as invalid for brief
-    n_clusters = args.c # 200 # Max quantity of kp, 0 as invalid for brief
-    print "train_addr : %s, desptype : %s, nfeatures : %d, nclusters : %d " % (train_addr, desptype, nfeatures, n_clusters)'''
     main()

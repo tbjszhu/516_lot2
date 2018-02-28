@@ -1,3 +1,6 @@
+# this file is logically the same with test_image.py #
+# please refer to the commentaire of that file       #
+
 from sklearn.externals import joblib
 import argparse
 import cv2

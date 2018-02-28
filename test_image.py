@@ -4,13 +4,13 @@ import cv2
 from utils import *
 from matplotlib import pyplot as plt
 
-desp_dim = 11
-normalize_value = 255
-sub_window = 32
-
+desp_dim = 11 # dimension of the texton descriptor
+normalize_value = 255 # default pixel value for layer inlier
+sub_window = 32 # window size to calculate histogram 
 
 def main(test_image, model, hist_model, filter_enable, ed_enable):
-    # decide whether a model exist
+
+    # decide whether a pixel model exist
     save_addr = './save_model'
     model_dir = ''
     model_exist = False
@@ -24,32 +24,29 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
             print "Pixel kmeans model exists"
             model_exist = True
             model_addr = filename
+            print "Kmeans model addr : " + model_addr
             break
             
-    print "Kmeans model addr : " + model_addr
     if model_exist:
-        kmeans = joblib.load(model_addr)  # load pre-trained k-means model #
-        # print ('kmeans parameters', kmeans.get_params())
+        # load pre-trained pixel k-means model
+        kmeans = joblib.load(model_addr)  
     else:
         print "please generate kmeans model for pixel"
         sys.exit(0)
 
-    # get k-means init value
-    init_value = kmeans.get_params()['init']
-
-    # train histogram
-    test_dir = "./image_jpg/"
+ 
+    test_dir = "./image_test/"
     desp_save_dir = "./descriptor/"
     hist_dir = "./hist/"
-    image_list = getFileListFromDir(test_dir, filetype='npy')
     hist_list = getFileListFromDir(hist_dir, filetype='npy')
     hist_num = len(hist_list)
     hist_total = []
 
-    # test_image = "nessne04"
     test_addr = test_dir + test_image + ".jpg"
     print "teating image : ", test_addr
     test_image = test_addr.split('/')[-1].split('.')[0]
+    
+    # read/generate the descriptor file of the images  
     desp_list = getFileListFromDir(desp_save_dir, filetype='npy')
     desp_exist = False
     for despfile in desp_list:
@@ -70,9 +67,6 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
     label = kmeans.predict(des_reshape)
     label_reshape = np.reshape(label, (des.shape[0], des.shape[1]))    
     pixel_kmeans = colorizeImage_16(label, label_reshape.shape)
-    # plt.figure(1)
-    # plt.imshow(pixel_kmeans.astype(np.uint8))
-
 
     # get 16 layer image
     layer_num = kmeans.get_params()['n_clusters']
@@ -81,32 +75,14 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
         tmp = label_reshape.copy()
         tmp[tmp == layer] = normalize_value
         tmp[tmp != 255] = 0
-        '''plt.imshow(tmp.astype(np.uint8),cmap ="gray")
-        plt.show()  
-        plt.close()'''
         integral = generate_integral_image(tmp, normalize_value)
-        '''plt.imshow(integral, cmap ="gray")
-        plt.show()
-        plt.close()'''
         layers[:, :, layer] = integral[0:-1, 0:-1].copy()
 
     # generate histogram
     hist_addr = hist_dir + test_image
     hist = generate_histogram(layers, sub_window)
 
-    # debug
-    '''hist_reshape = np.reshape(hist, (label_reshape.shape[0], label_reshape.shape[1],12))
-    hist_pixel = np.zeros(label_reshape.shape)
-    for i in range(label_reshape.shape[0]):
-        for j in range(label_reshape.shape[1]):
-            for k in range(12):
-                if hist_reshape[i,j,k] == np.max(hist_reshape[i,j,:]):
-                    hist_pixel[i,j] = k
-    plt.imshow(hist_pixel,cmap ="gray")
-    plt.show()
-    plt.close()'''
-
-    # read kmeans hist
+    # read histogram kmeans model
     save_addr = './save_hist_model'
     model_dir = ''
     model_exist = False
@@ -132,16 +108,16 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
                 elif model == "16":
                     if "road" in filename:
                         model_addr = filename
-                        break
-                
-    print "Kmeans model addr : " + model_addr
+                        break     
+            print "Kmeans model addr : " + model_addr
+            
     if model_exist:
         kmeans_hist = joblib.load(model_addr)  # load pre-trained k-means model
     else:
         print "please generate kmeans model for histogram"
         sys.exit(0)
 
-    # predict hist for test image
+    # Kmeans classification for histogram
     print hist.shape
     label_hist = kmeans_hist.predict(hist)
     original = cv2.imread(test_dir + test_image + ".jpg")[1:-1, 1:-1, :]
@@ -149,9 +125,7 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
     col_img = colorizeImage(original.shape,label_hist, hist_model)
     fus_img = fusionImage(original, original.shape,label_hist, model,hist_model, filter_enable, ed_enable)
 
-    #label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
-
-    #show images
+    #show images result in 2x2 figures
     f,((ax11,ax12),(ax21,ax22)) = plt.subplots(2,2)
     ax11.set_title("Original")
     ax11.imshow(original)
@@ -171,16 +145,16 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", type=str, default="helston3",
+    parser.add_argument("-i", type=str, default="helston4",
                         help="test image name")
     parser.add_argument("-d", type=str, default="16",
-                        help="kmeans desp model version 12 or 16")
+                        help="kmeans descriptor model dimension 12 or 16")
     parser.add_argument("-g", type=str, default="12",
-                        help="kmeans hist model version 8 or 12")
+                        help="kmeans histogram model quantity 8 or 12")
     parser.add_argument("-f", type=int, default="1",
                         help="filtrage, 0 disable, other value enable ")
     parser.add_argument("-e", type=int, default="1",
-                        help="eroded,dilate, 0 disable, other value enable")
+                        help="eroded&dilate, 0 disable, other value enable")
                                                                                             
     args = parser.parse_args()
     img_addr = args.i
@@ -188,6 +162,8 @@ if __name__ == "__main__":
     hist_model = args.g
     filter_enable = args.f
     ed_enable = args.e
+    
+    # 12D histogram need the descriptor dimension to be 12 
     if hist_model == "12":
         model = "16"
     print "img_addr : %s" % (img_addr)

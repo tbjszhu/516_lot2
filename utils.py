@@ -61,21 +61,24 @@ def img_generator(img_list):
         yield (img, f1.split('/')[-1])
 
 
-# calculate ORB descriptors
+# calculate Texton descriptors
 def descriptor_generator(data):
     """
-    :param data: numpy array grayscale image for getting histo or local descriptors for an images
-    :param feature_point_quantity: MAX feature point quantity
-    :return: descriptor_list
+    :param data: numpy array LAB image to calculate its descriptor matrix
+    :return: descriptor array
     """
     height, width, dim =  data.shape
     mask_width = 3
     patch_width = (mask_width - 1)/2
+    
+    # weights in descriptor
     w1 = 0.5
     w2 = 1
     w3 = 0.5
     
     des = []
+    
+    # calculate descriptor for each Lab pixel
     for i in range(height):
         if i > patch_width - 1 and i < height - patch_width:
             des_line = []
@@ -105,7 +108,7 @@ def descriptor_generator(data):
     des = np.array(des)
     return des
 
-# generator descriptors
+# generator descriptors from dir address
 def generator_descriptor(fileaddr, save_addr):
     """
     :param fileaddr: string, images dir
@@ -130,12 +133,22 @@ def generator_descriptor(fileaddr, save_addr):
             des = descriptor_generator(data)
             np.save(save_addr+'/'+filename_des+'_dsp', des)
 
+# convert BGR image to LAB image
 def convert_BGR2LAB(addr):
+    """
+    :param addr: string, BGR images address
+    :return: LAB image
+    """    
     img = cv2.imread(addr)
     img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     return img_lab
-                
+
+# read kmeans init value                
 def read_kmeans_init(desp_init_dir):
+    """
+    :param desp_init_dir: string, kmeans init value address
+    :return: init value array
+    """    
     desp_init_list = getFileListFromDir(desp_init_dir, filetype='npy')
     desp_init_num = len(desp_init_list)    
     
@@ -150,8 +163,17 @@ def read_kmeans_init(desp_init_dir):
         else:
             init_value = np.vstack((init_value, np.load(npyfile)))
     return init_value
-            
+
+# generate kmeans model from train data and init value ndarray          
 def generate_kmeans_model(train_data, save_addr, n_clusters, ndarray=None):
+    """
+    :param train_data: train data array
+    :param save_addr: string, save kmeans model in this address
+    :param n_clusters: clusters quantity
+    :param ndarray: kmeans init value array
+    :return: none
+    """  
+    
     if ndarray == None:
         kmeans = KMeans(n_clusters, random_state=0).fit(train_data)
     else:
@@ -166,17 +188,24 @@ def generate_kmeans_model(train_data, save_addr, n_clusters, ndarray=None):
     # save k-means model for further use
     joblib.dump(kmeans, save_addr + '/' + prefix + '_kmeans_road_' + str(n_clusters) + '.pkl')
 
+# generate integral image from layer image
 def generate_integral_image(tmp, normalize_value):
+    """
+    :param tmp: Lab image array
+    :normalize_valuereturn: default pixel value for layer inlier
+    :return: integral image array
+    """    
     tmp = 1.0*tmp/normalize_value
     integral = cv2.integral(tmp.astype(np.uint8))    
     #return np.sqrt(integral)
     return integral
-
+    
+# generate histogram from integral image
 def generate_histogram(layers, sub_window):
     """
-    :param data: numpy array grayscale image for getting histo or local descriptors for an images
-    :param feature_point_quantity: MAX feature point quantity
-    :return: descriptor_list
+    :param layers: Layer image array
+    :param sub_window: window size to calculate histogram
+    :return: histogram
     """
     
     height, width, dim =  layers.shape
@@ -206,21 +235,16 @@ def generate_histogram(layers, sub_window):
 
             c = layers[i, j]
             hist_pix = 1.0*c + a - d - b
-            '''if i == 200 and j == 200:
-                print "c", c
-                print "a",a
-                print "d",d
-                print "b",b
-                print i,j, np.max(hist_pix), hist_pix'''
-            #hist.append(hist_pix)
             hist[i,j] = hist_pix  
     hist = np.reshape(hist, (height * width, dim))             
     return hist    
 
+# turn grayscale image to color to get a better visual perform with 8 colors    
 def colorizeImage(shape, label, hist_model):
     """
     :param shape: output image shape (h,w)
     :param label: kmeans hist prediction
+    :param hist_model: histogram dimension
     :return: RGB image of segmentation
     """
     # show segmentation result
@@ -238,10 +262,11 @@ def colorizeImage(shape, label, hist_model):
             count += 1
     return tmp
     
-    
+# turn grayscale image to color to get a better visual perform with 16 colors    
 def colorizeImage_16(label, shape):
     """
     :param label: pixel kmeans prediction
+    :param shape: output image shape (h,w)
     :return: RGB image of segmentation
     """
     # show segmentation result
@@ -256,15 +281,14 @@ def colorizeImage_16(label, shape):
             tmp[i, j, :] = map_label2color[label[count]]
             count += 1
     return tmp
-    
+
+# fusion the clusters for road as the same color    
 def fusionImage(img, shape, label, model, hist_model, filter_enable, ed_enable):
     """
     :param shape: output image shape (h,w)
     :param label: kmeans hist prediction
-    :return: RGB image of segmentation
+    :return: RGB image of fusion
     """
-    # show segmentation result
-
     tmp = img.copy()
     if hist_model == "8":
         map_label2color = [(200, 180, 0), (0, 200, 180), (180, 0, 200), (100, 0, 0), (0, 100, 0), (0, 0, 100),
@@ -291,8 +315,13 @@ def fusionImage(img, shape, label, model, hist_model, filter_enable, ed_enable):
             count += 1 
     return tmp
     
+# filter the no-road hot zone and eliminate the noise zone   
 def filter(label, shape, ed_enable):
-
+    """
+    :param label: kmeans hist prediction    
+    :param shape: output image shape (h,w)
+    :return: RGB image of filterage
+    """
     layers = np.zeros((target_layers,shape[0],shape[1]))
     image_height = shape[0]
     height_thrs = image_height*0.6
@@ -324,16 +353,10 @@ def filter(label, shape, ed_enable):
         dilated_kernel_height = int(shape[1]*dilated_ratio)
         dilated_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(dilated_kernel_height,dilated_kernel_height))    
 
-        for k in range(target_layers):
-            plt.imshow(layers[k],cmap ="gray")
-            plt.show()            
-            eroded = cv2.erode(layers[k], eroded_kernel)
-            plt.imshow(eroded,cmap ="gray")
-            plt.show()              
+        for k in range(target_layers):          
+            eroded = cv2.erode(layers[k], eroded_kernel)           
             dilated = cv2.dilate(eroded, dilated_kernel)
-            layers[k] = dilated
-            plt.imshow(dilated,cmap ="gray")
-            plt.show()     
+            layers[k] = dilated   
     
     # calculate the position(height) of the hot zone        
     for k in range(target_layers):   
