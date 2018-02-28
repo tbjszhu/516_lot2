@@ -103,7 +103,6 @@ def descriptor_generator(data):
                     des_line.append(des_pix)
             des.append(des_line)                
     des = np.array(des)
-    print des.shape
     return des
 
 # generator descriptors
@@ -258,7 +257,7 @@ def colorizeImage_16(label, shape):
             count += 1
     return tmp
     
-def fusionImage(img, shape, label, model, hist_model):
+def fusionImage(img, shape, label, model, hist_model, filter_enable, ed_enable):
     """
     :param shape: output image shape (h,w)
     :param label: kmeans hist prediction
@@ -275,9 +274,8 @@ def fusionImage(img, shape, label, model, hist_model):
                            (200, 100, 0), (100, 200, 0),(100, 50, 0), (0, 100, 50), (50, 0, 100), (200, 100, 100)] 
     count = 0
 
-    filter_enable = True
     if hist_model == "12" and filter_enable:
-        label = filter(label, shape).copy()
+        label = filter(label, shape, ed_enable).copy()
             
     for i in range(tmp.shape[0]):
         for j in range(tmp.shape[1]):
@@ -299,7 +297,7 @@ def fusionImage(img, shape, label, model, hist_model):
             count += 1 
     return tmp
     
-def filter(label, shape):
+def filter(label, shape, ed_enable):
 
     layers = np.zeros((target_layers,shape[0],shape[1]))
     image_height = shape[0]
@@ -320,7 +318,6 @@ def filter(label, shape):
                 layers[2,i,j] = 1
             count += 1 
             
-    ed_enable = True
     if ed_enable:        
         # erode and dilate
         eroded_ratio = 0.06
@@ -346,17 +343,13 @@ def filter(label, shape):
                     surface[k] += 1
                     height[k] += i
         if surface[k]!= 0:            
-            height[k] = height[k]/surface[k]
-            print height[k], surface[k]
-        #plt.imshow(layers[k].astype(np.uint8),cmap ="gray")
-        #plt.show()
-        
+            height[k] = height[k]/surface[k]        
     label = np.zeros_like(label)
     
     # reset label
     for k in range(target_layers):    
         if height[k] < height_thrs:# and surface[k] < surface_thrs:
-            print "filtreing", k
+            print "filtering layer: ", k
             layers[k,:,:] = 0
         count = 0 
         for i in range(shape[0]):

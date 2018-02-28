@@ -9,7 +9,7 @@ normalize_value = 255
 sub_window = 32
 
 
-def main(test_image, model, hist_model):
+def main(test_image, model, hist_model, filter_enable, ed_enable):
     # decide whether a model exist
     save_addr = './save_model'
     model_dir = ''
@@ -147,7 +147,7 @@ def main(test_image, model, hist_model):
     original = cv2.imread(test_dir + test_image + ".jpg")[1:-1, 1:-1, :]
     original = cv2.cvtColor(original,cv2.COLOR_BGR2RGB)
     col_img = colorizeImage(original.shape,label_hist, hist_model)
-    fus_img = fusionImage(original, original.shape,label_hist, model,hist_model)
+    fus_img = fusionImage(original, original.shape,label_hist, model,hist_model, filter_enable, ed_enable)
 
     #label_hist_reshape = np.reshape(label_hist, label_reshape.shape)
 
@@ -185,12 +185,19 @@ if __name__ == "__main__":
     parser.add_argument("-d", type=str, default="16",
                         help="kmeans desp model version 12 or 16")
     parser.add_argument("-g", type=str, default="12",
-                        help="kmeans hist model version 8 or 12")                    
+                        help="kmeans hist model version 8 or 12")
+    parser.add_argument("-f", type=int, default="True",
+                        help="filtrage, 0 disable, other value enable ")
+    parser.add_argument("-e", type=int, default="True",
+                        help="eroded,dilate, 0 disable, other value enable")
+                                                                                            
     args = parser.parse_args()
     img_addr = args.i
     model = args.d
     hist_model = args.g
+    filter_enable = args.f
+    ed_enable = args.e
     if hist_model == "12":
         model = "16"
     print "img_addr : %s" % (img_addr)
-    main(img_addr, model, hist_model)
+    main(img_addr, model, hist_model, filter_enable, ed_enable)
