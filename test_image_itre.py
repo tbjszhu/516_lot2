@@ -180,6 +180,8 @@ def main(img_addr, model, hist_model, filter_enable, ed_enable):
         plt.axis("off")
         plt.tight_layout()
         plt.show()
+        
+        #fus_img
      
 
 if __name__ == "__main__":
