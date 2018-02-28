@@ -196,9 +196,9 @@ if __name__ == "__main__":
                         help="kmeans desp model version 12 or 16")
     parser.add_argument("-g", type=str, default="12",
                         help="kmeans hist model version 8 or 12")
-    parser.add_argument("-f", type=int, default="True",
+    parser.add_argument("-f", type=int, default="1",
                         help="filtrage, 0 disable, other value enable ")
-    parser.add_argument("-e", type=int, default="True",
+    parser.add_argument("-e", type=int, default="1",
                         help="eroded,dilate, 0 disable, other value enable")
                                                                                             
     args = parser.parse_args()

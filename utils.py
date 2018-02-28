@@ -328,10 +328,12 @@ def filter(label, shape, ed_enable):
             plt.imshow(layers[k],cmap ="gray")
             plt.show()            
             eroded = cv2.erode(layers[k], eroded_kernel)
-            plt.imshow(layers[k],cmap ="gray")
+            plt.imshow(eroded,cmap ="gray")
             plt.show()              
             dilated = cv2.dilate(eroded, dilated_kernel)
-            layers[k] = dilated    
+            layers[k] = dilated
+            plt.imshow(dilated,cmap ="gray")
+            plt.show()     
     
     # calculate the position(height) of the hot zone        
     for k in range(target_layers):   
