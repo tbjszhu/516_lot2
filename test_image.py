@@ -61,7 +61,8 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
         img = cv2.imread(test_addr)
         img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
         des = descriptor_generator(img_lab)
-
+        
+    # Kmeans classification for each pixel
     lines = des.shape[0] * des.shape[1]
     des_reshape = np.reshape(des, (lines, desp_dim))
     label = kmeans.predict(des_reshape)
@@ -125,7 +126,7 @@ def main(test_image, model, hist_model, filter_enable, ed_enable):
     col_img = colorizeImage(original.shape,label_hist, hist_model)
     fus_img = fusionImage(original, original.shape,label_hist, model,hist_model, filter_enable, ed_enable)
 
-    #show images result in 2x2 figures
+    #show road detection result in 2x2 figures
     f,((ax11,ax12),(ax21,ax22)) = plt.subplots(2,2)
     ax11.set_title("Original")
     ax11.imshow(original)

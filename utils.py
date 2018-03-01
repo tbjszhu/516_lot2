@@ -385,8 +385,4 @@ def filter(label, shape, ed_enable):
                     elif k == 2:
                         label[count] = 4        
                 count += 1               
-    return label        
-          
-
-
-  
+    return label 

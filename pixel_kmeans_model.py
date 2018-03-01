@@ -64,7 +64,7 @@ def main():
         for des, filename in lab_generator(desp_list):
             filename_des = filename.split('/')[-1].split('.')[0]
             
-            # reshape des from 3D to 2D to adapt the kmeans input
+            # reshape descriptor from 3D to 2D to adapt the kmeans input
             des_quantity = des.shape[0] * des.shape[1]
             des_reshape = np.reshape(des, (des_quantity, desp_dim))
             
